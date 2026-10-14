@@ -10,12 +10,13 @@ import os
 #Initialise Env
 load_dotenv()
 openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-print("API Key Loaded:", os.getenv("OPENAI_API_KEY")) #To check if right key is loading
+print("OpenAI API key loaded:", bool(os.getenv("OPENAI_API_KEY")))  # never print the key itself
+MODEL = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
 
 #Initialise Speech Engine
 engine = pyttsx3.init()
 voices = engine.getProperty('voices')
-engine.setProperty('voice',voices[1].id)
+engine.setProperty('voice', voices[1].id if len(voices) > 1 else voices[0].id)
 engine.setProperty('rate',175)
 
 #Speech Output function
@@ -42,7 +43,7 @@ def listen():
 
 # AI Build Function
 def build_prompt(context = "general"):
-    base_prompt = """HOW YOU WANT YOUR AI TO THINK OR ACT"""
+    base_prompt = os.getenv("SYSTEM_PROMPT", "You are Jarvis, a calm and helpful voice assistant. Keep answers short and clear, because they will be read aloud.")
     
     if context == "technical":
         base_prompt += "\nFocus more on clarity, structure, and precision in technical reasoning."
@@ -120,10 +121,10 @@ def ask_jarvis(prompt):
     system_prompt = build_prompt(context)
 
     response = openai_client.chat.completions.create(
-        model = "gpt-3.5-turbo",
+        model = MODEL,
         messages=[{"role":"system","content":system_prompt},{"role":"user","content":prompt}]
 )
-    return response['choices'][0]['message']['content']
+    return response.choices[0].message.content
 
 def main():
     speak("Hello User, I am Jarvis. How may I assist you today?")
@@ -147,7 +148,7 @@ def main():
                 break
             # Time Check
             elif 'time' in query:
-                strTime = datetime.datetime.now().strftime("%H%M%S")
+                strTime = datetime.datetime.now().strftime("%I:%M %p")
                 speak(f"The time is {strTime}")
             # Default ask
             else:
